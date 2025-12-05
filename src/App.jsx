@@ -60,24 +60,35 @@ function App() {
     const handleTouchEnd = () => {
         const diffX = touchStartRef.current.x - touchEndRef.current.x
         const diffY = touchStartRef.current.y - touchEndRef.current.y
-        const minSwipeDistance = 50
+        const minSwipeDistance = 100
 
-        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
-            const calendarApi = calendarRef.current?.getApi()
-            if (calendarApi) {
-                if (diffX > 0) {
-                    calendarApi.next()
+        // Kiểm tra xem có phải là tap/click không (di chuyển quá ít)
+        const totalMovement = Math.sqrt(diffX * diffX + diffY * diffY)
+        const isTap = totalMovement < 10 // Nếu di chuyển < 10px thì coi như tap
+
+        // Chỉ xử lý swipe nếu KHÔNG phải tap và di chuyển đủ xa
+        if (!isTap) {
+            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
+                const calendarApi = calendarRef.current?.getApi()
+                if (calendarApi) {
+                    if (diffX > 0) {
+                        calendarApi.next()
+                    } else {
+                        calendarApi.prev()
+                    }
+                }
+            } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
+                if (diffY > 0) {
+                    setHeightLevel(prev => Math.max(0, prev - 1))
                 } else {
-                    calendarApi.prev()
+                    setHeightLevel(prev => Math.min(2, prev + 1))
                 }
             }
-        } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
-            if (diffY > 0) {
-                setHeightLevel(prev => Math.max(0, prev - 1))
-            } else {
-                setHeightLevel(prev => Math.min(2, prev + 1))
-            }
         }
+
+        // Reset touch positions
+        touchStartRef.current = {x: 0, y: 0}
+        touchEndRef.current = {x: 0, y: 0}
     }
 
     const dayCellContent = (arg) => {
@@ -99,7 +110,7 @@ function App() {
                 <div className="text-sm font-medium">{day}</div>
                 <div className="text-xs text-gray-500">{lunarDay}/{lunarMonth}</div>
                 {activityCount > 0 && (
-                    <div className="absolute bottom-1 w-1 h-1 bg-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-1.5 w-3 h-1 bg-blue-500 rounded-full"></div>
                 )}
             </div>
         )
@@ -107,11 +118,24 @@ function App() {
 
     const handleDateClick = (arg) => {
         const date = arg.date
+        const calendarApi = calendarRef.current?.getApi()
+        const currentMonth = calendarApi?.getDate().getMonth()
+        const clickedMonth = date.getMonth()
+
+        // Ngăn chặn hành vi mặc định NGAY LẬP TỨC
+        arg.jsEvent.preventDefault()
+        arg.jsEvent.stopPropagation()
+
+        // Ngăn chặn chuyển tháng khi click vào ngày thuộc tháng khác
+        if (currentMonth !== clickedMonth) {
+            return false
+        }
+
         const dateKey = date.toISOString().split('T')[0]
         const dayActivities = activities[dateKey] || []
 
         setSelectedDate(date)
-        
+
         // Nếu ngày có hoạt động, hiển thị danh sách ở dưới, không mở popup
         // Nếu ngày không có hoạt động, không làm gì cả (chờ người dùng click nút thêm)
     }
@@ -199,9 +223,9 @@ function App() {
                 {/* Calendar Container */}
                 <div
                     className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300"
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
+                    // onTouchStart={handleTouchStart}
+                    // onTouchMove={handleTouchMove}
+                    // onTouchEnd={handleTouchEnd}
                     style={{height: `${heightLevels[heightLevel]}px`}}
                 >
                     <FullCalendar
@@ -239,6 +263,9 @@ function App() {
                         nowIndicator={true}
                         handleWindowResize={true}
                         windowResizeDelay={100}
+                        navLinks={false}
+                        fixedWeekCount={false}
+                        showNonCurrentDates={true}
                         views={{
                             dayGridMonth: {
                                 dayMaxEventRows: 3
@@ -246,6 +273,17 @@ function App() {
                         }}
                         dayCellContent={dayCellContent}
                         dateClick={handleDateClick}
+                        dayCellClassNames={(arg) => {
+                            const calendarApi = calendarRef.current?.getApi()
+                            const currentMonth = calendarApi?.getDate().getMonth()
+                            const cellMonth = arg.date.getMonth()
+
+                            // Thêm class để vô hiệu hóa pointer events cho ngày ngoài tháng
+                            if (currentMonth !== cellMonth) {
+                                return ['pointer-events-none', 'cursor-default']
+                            }
+                            return []
+                        }}
                     />
                 </div>
 
@@ -256,7 +294,7 @@ function App() {
                             {selectedDate ? 'Hoạt động trong ngày' : 'Hoạt động hôm nay'}
                         </h3>
                         <span className="text-xs sm:text-sm text-gray-500">
-                            {selectedDate 
+                            {selectedDate
                                 ? selectedDate.toLocaleDateString('vi-VN', {day: 'numeric', month: 'long'})
                                 : new Date().toLocaleDateString('vi-VN', {day: 'numeric', month: 'long'})
                             }
