@@ -13,6 +13,19 @@
   animation: slide-up 0.3s ease-out;
 }
 
+/* Smooth height transition for calendar */
+/*.fc {*/
+/*  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
+/*}*/
+
+/*.fc .fc-view-harness {*/
+/*  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
+/*}*/
+
+/*.fc .fc-scroller {*/
+/*  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
+/*}*/
+
 #root {
   width: 100%;
   margin: 0;
@@ -110,6 +123,9 @@
   font-size: 1rem !important;
   color: #52525b;
 }
+.fc-theme-standard td{
+  border: none !important;
+}
 
 .fc .fc-day-today {
   background-color: #daffd6 !important;
@@ -180,9 +196,12 @@
 
 /* Remove default borders */
 .fc .fc-scrollgrid {
-  /*border: none !important;*/
+  border: none !important;
   /*border-radius: 0.5rem;*/
   /*overflow: hidden;*/
+}
+.fc-theme-standard th{
+  border: none !important;
 }
 
 /* More Events Link */

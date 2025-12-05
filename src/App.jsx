@@ -1,4 +1,4 @@
-import {useState, useEffect} from 'react'
+import {useState, useEffect, useRef} from 'react'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'
@@ -14,6 +14,12 @@ function App() {
     const [selectedDate, setSelectedDate] = useState(null)
     const [lunarInfo, setLunarInfo] = useState(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
+    const [heightLevel, setHeightLevel] = useState(1) // 0: nhỏ, 1: trung bình, 2: lớn
+    const calendarRef = useRef(null)
+    const touchStartRef = useRef({x: 0, y: 0})
+    const touchEndRef = useRef({x: 0, y: 0})
+
+    const heightLevels = [450, 550, 750] // 3 mức chiều cao
 
     useEffect(() => {
         const handleResize = () => {
@@ -23,6 +29,50 @@ function App() {
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
     }, [])
+
+    const handleTouchStart = (e) => {
+        touchStartRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        }
+    }
+
+    const handleTouchMove = (e) => {
+        touchEndRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        }
+    }
+
+    const handleTouchEnd = () => {
+        const diffX = touchStartRef.current.x - touchEndRef.current.x
+        const diffY = touchStartRef.current.y - touchEndRef.current.y
+        const minSwipeDistance = 50
+
+        // Vuốt ngang (trái/phải) - chuyển tháng/tuần/ngày
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
+            const calendarApi = calendarRef.current?.getApi()
+            if (calendarApi) {
+                if (diffX > 0) {
+                    // Vuốt sang trái - tháng/tuần/ngày tiếp theo
+                    calendarApi.next()
+                } else {
+                    // Vuốt sang phải - tháng/tuần/ngày trước
+                    calendarApi.prev()
+                }
+            }
+        }
+        // Vuốt dọc (lên/xuống) - thay đổi chiều cao theo 3 nấc
+        else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
+            if (diffY > 0) {
+                // Vuốt lên - giảm chiều cao
+                setHeightLevel(prev => Math.max(0, prev - 1))
+            } else {
+                // Vuốt xuống - tăng chiều cao
+                setHeightLevel(prev => Math.min(2, prev + 1))
+            }
+        }
+    }
 
     const dayCellContent = (arg) => {
         const date = arg.date
@@ -64,8 +114,14 @@ function App() {
         <div className="min-h-screen bg-neutral-50 p-2 sm:p-4 md:p-6 lg:p-8">
             <div className="max-w-7xl mx-auto">
                 {/* Calendar Container */}
-                <div className="bg-white rounded-xl border border-neutral-200 p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm">
+                <div
+                    className="bg-white p-3 sm:p-4 md:p-6 lg:p-8 shadow-sm transition-all duration-300"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
+                >
                     <FullCalendar
+                        ref={calendarRef}
                         plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
                         initialView={currentView}
                         locale={viLocale}
@@ -93,9 +149,9 @@ function App() {
                         selectMirror={true}
                         dayMaxEvents={true}
                         weekends={true}
-                        height="auto"
+                        height={heightLevels[heightLevel]}
                         eventDisplay="block"
-                        eventClassNames="rounded-lg shadow-sm hover:shadow-md transition-all cursor-pointer"
+                        eventClassNames=" shadow-sm hover:shadow-md transition-all cursor-pointer"
                         nowIndicator={true}
                         aspectRatio={1.8}
                         handleWindowResize={true}
