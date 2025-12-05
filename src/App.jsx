@@ -110,7 +110,7 @@ function App() {
                 <div className="text-sm font-medium">{day}</div>
                 <div className="text-xs text-gray-500">{lunarDay}/{lunarMonth}</div>
                 {activityCount > 0 && (
-                    <div className="absolute -bottom-1.5 w-3 h-1 bg-blue-500 rounded-full"></div>
+                    <div className="absolute -bottom-2 w-4 h-1 bg-blue-500 rounded-full"></div>
                 )}
             </div>
         )
