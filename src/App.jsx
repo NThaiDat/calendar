@@ -105,17 +105,17 @@ function App() {
             const calendarApi = calendarRef.current?.getApi()
             if (calendarApi && !isTransitioning) {
                 setIsTransitioning(true)
-                
+
                 const calendarEl = calendarRef.current?.elRef?.current
-                
+
                 // Xác định hướng: diffX > 0 = vuốt trái (đi tới), diffX < 0 = vuốt phải (lùi lại)
                 const swipeLeft = diffX > 0
-                
+
                 if (calendarEl) {
                     // Tháng cũ đi ra theo hướng vuốt
                     calendarEl.classList.add(swipeLeft ? 'calendar-transitioning-out-left' : 'calendar-transitioning-out-right')
                 }
-                
+
                 setTimeout(() => {
                     // Chuyển tháng
                     if (swipeLeft) {
@@ -123,14 +123,14 @@ function App() {
                     } else {
                         calendarApi.prev()
                     }
-                    
+
                     if (calendarEl) {
                         // Xóa class out
                         calendarEl.classList.remove('calendar-transitioning-out-left', 'calendar-transitioning-out-right')
                         // Tháng mới vào từ hướng ngược lại
                         calendarEl.classList.add(swipeLeft ? 'calendar-transitioning-in-right' : 'calendar-transitioning-in-left')
                     }
-                    
+
                     setTimeout(() => {
                         if (calendarEl) {
                             calendarEl.classList.remove('calendar-transitioning-in-left', 'calendar-transitioning-in-right')
@@ -141,11 +141,11 @@ function App() {
             }
         } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
             e.preventDefault()
-            if (diffY > 0) {
-                setHeightLevel(prev => Math.max(0, prev - 1))
-            } else {
-                setHeightLevel(prev => Math.min(2, prev + 1))
-            }
+            // if (diffY > 0) {
+            //     setHeightLevel(prev => Math.max(0, prev - 1))
+            // } else {
+            //     setHeightLevel(prev => Math.min(2, prev + 1))
+            // }
         }
 
         // Reset touch positions
@@ -314,7 +314,7 @@ function App() {
                             isMobile
                                 ? {
                                     left: '',
-                                    center: 'prev,title,next',
+                                    center: 'title',
                                     right: ''
                                 }
                                 : {
@@ -323,6 +323,7 @@ function App() {
                                     right: 'dayGridMonth,dayGridWeek,timeGridDay'
                                 }
                         }
+                        // titleFormat={{year: 'numeric', month: '2-digit'}}
                         buttonText={{
                             today: 'Hôm nay',
                             month: 'Tháng',
