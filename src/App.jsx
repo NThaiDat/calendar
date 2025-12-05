@@ -27,7 +27,7 @@ function App() {
     const [newActivityTime, setNewActivityTime] = useState('')
     const [newActivityDescription, setNewActivityDescription] = useState('')
     const calendarRef = useRef(null)
-    const touchStartRef = useRef({x: 0, y: 0})
+    const touchStartRef = useRef({x: 0, y: 0, time: 0})
     const touchEndRef = useRef({x: 0, y: 0})
 
     const heightLevels = [350, 450, 600]
@@ -46,50 +46,80 @@ function App() {
     }, [])
 
     const handleTouchStart = (e) => {
+        // Không xử lý nếu touch vào các button hoặc input
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) {
+            return
+        }
+
         touchStartRef.current = {
             x: e.touches[0].clientX,
-            y: e.touches[0].clientY
+            y: e.touches[0].clientY,
+            time: Date.now()
         }
-    }
-
-    const handleTouchMove = (e) => {
         touchEndRef.current = {
             x: e.touches[0].clientX,
             y: e.touches[0].clientY
         }
     }
 
-    const handleTouchEnd = () => {
+    const handleTouchMove = (e) => {
+        // Không xử lý nếu touch vào các button hoặc input
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) {
+            return
+        }
+
+        touchEndRef.current = {
+            x: e.touches[0].clientX,
+            y: e.touches[0].clientY
+        }
+    }
+
+    const handleTouchEnd = (e) => {
+        // Không xử lý nếu touch vào các button hoặc input
+        if (e.target.closest('button') || e.target.closest('input') || e.target.closest('textarea')) {
+            return
+        }
+
         const diffX = touchStartRef.current.x - touchEndRef.current.x
         const diffY = touchStartRef.current.y - touchEndRef.current.y
-        const minSwipeDistance = 100
+        const touchDuration = Date.now() - (touchStartRef.current.time || 0)
+        const minSwipeDistance = 80
+        const maxTapDuration = 300 // ms
+        const maxTapMovement = 15 // px
 
-        // Kiểm tra xem có phải là tap/click không (di chuyển quá ít)
+        // Kiểm tra xem có phải là tap/click không
         const totalMovement = Math.sqrt(diffX * diffX + diffY * diffY)
-        const isTap = totalMovement < 10 // Nếu di chuyển < 10px thì coi như tap
+        const isTap = totalMovement < maxTapMovement && touchDuration < maxTapDuration
+
+        // Nếu là tap, không làm gì (để handleDateClick xử lý)
+        if (isTap) {
+            touchStartRef.current = {x: 0, y: 0, time: 0}
+            touchEndRef.current = {x: 0, y: 0}
+            return
+        }
 
         // Chỉ xử lý swipe nếu KHÔNG phải tap và di chuyển đủ xa
-        if (!isTap) {
-            if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
-                const calendarApi = calendarRef.current?.getApi()
-                if (calendarApi) {
-                    if (diffX > 0) {
-                        calendarApi.next()
-                    } else {
-                        calendarApi.prev()
-                    }
-                }
-            } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
-                if (diffY > 0) {
-                    setHeightLevel(prev => Math.max(0, prev - 1))
+        if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
+            e.preventDefault()
+            const calendarApi = calendarRef.current?.getApi()
+            if (calendarApi) {
+                if (diffX > 0) {
+                    calendarApi.next()
                 } else {
-                    setHeightLevel(prev => Math.min(2, prev + 1))
+                    calendarApi.prev()
                 }
+            }
+        } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
+            e.preventDefault()
+            if (diffY > 0) {
+                setHeightLevel(prev => Math.max(0, prev - 1))
+            } else {
+                setHeightLevel(prev => Math.min(2, prev + 1))
             }
         }
 
         // Reset touch positions
-        touchStartRef.current = {x: 0, y: 0}
+        touchStartRef.current = {x: 0, y: 0, time: 0}
         touchEndRef.current = {x: 0, y: 0}
     }
 
@@ -124,22 +154,15 @@ function App() {
         const currentMonth = calendarApi?.getDate().getMonth()
         const clickedMonth = date.getMonth()
 
-        // Ngăn chặn hành vi mặc định NGAY LẬP TỨC
-        arg.jsEvent.preventDefault()
-        arg.jsEvent.stopPropagation()
-
         // Ngăn chặn chuyển tháng khi click vào ngày thuộc tháng khác
         if (currentMonth !== clickedMonth) {
+            arg.jsEvent.preventDefault()
+            arg.jsEvent.stopPropagation()
             return false
         }
 
-        const dateKey = date.toISOString().split('T')[0]
-        const dayActivities = activities[dateKey] || []
-
+        // Chọn ngày
         setSelectedDate(date)
-
-        // Nếu ngày có hoạt động, hiển thị danh sách ở dưới, không mở popup
-        // Nếu ngày không có hoạt động, không làm gì cả (chờ người dùng click nút thêm)
     }
 
     const openAddActivityModal = () => {
@@ -242,9 +265,9 @@ function App() {
                 {/* Calendar Container */}
                 <div
                     className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 relative"
-                    // onTouchStart={handleTouchStart}
-                    // onTouchMove={handleTouchMove}
-                    // onTouchEnd={handleTouchEnd}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                     style={{height: `${heightLevels[heightLevel]}px`}}
                 >
                     <FullCalendar
