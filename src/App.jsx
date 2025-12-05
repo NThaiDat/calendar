@@ -19,6 +19,7 @@ function App() {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
     const [heightLevel, setHeightLevel] = useState(1)
     const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
+    const [isTransitioning, setIsTransitioning] = useState(false)
     const [activities, setActivities] = useState(() => {
         const saved = localStorage.getItem('activities')
         return saved ? JSON.parse(saved) : {}
@@ -102,12 +103,41 @@ function App() {
         if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > minSwipeDistance) {
             e.preventDefault()
             const calendarApi = calendarRef.current?.getApi()
-            if (calendarApi) {
-                if (diffX > 0) {
-                    calendarApi.next()
-                } else {
-                    calendarApi.prev()
+            if (calendarApi && !isTransitioning) {
+                setIsTransitioning(true)
+                
+                const calendarEl = calendarRef.current?.elRef?.current
+                
+                // Xác định hướng: diffX > 0 = vuốt trái (đi tới), diffX < 0 = vuốt phải (lùi lại)
+                const swipeLeft = diffX > 0
+                
+                if (calendarEl) {
+                    // Tháng cũ đi ra theo hướng vuốt
+                    calendarEl.classList.add(swipeLeft ? 'calendar-transitioning-out-left' : 'calendar-transitioning-out-right')
                 }
+                
+                setTimeout(() => {
+                    // Chuyển tháng
+                    if (swipeLeft) {
+                        calendarApi.next()
+                    } else {
+                        calendarApi.prev()
+                    }
+                    
+                    if (calendarEl) {
+                        // Xóa class out
+                        calendarEl.classList.remove('calendar-transitioning-out-left', 'calendar-transitioning-out-right')
+                        // Tháng mới vào từ hướng ngược lại
+                        calendarEl.classList.add(swipeLeft ? 'calendar-transitioning-in-right' : 'calendar-transitioning-in-left')
+                    }
+                    
+                    setTimeout(() => {
+                        if (calendarEl) {
+                            calendarEl.classList.remove('calendar-transitioning-in-left', 'calendar-transitioning-in-right')
+                        }
+                        setIsTransitioning(false)
+                    }, 200)
+                }, 100)
             }
         } else if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > minSwipeDistance) {
             e.preventDefault()
@@ -137,10 +167,15 @@ function App() {
         const dayActivities = activities[dateKey] || []
         const activityCount = dayActivities.length
 
+        // Kiểm tra ngày 1 hoặc 15 âm lịch
+        const isLunarSpecialDay = lunarDay === 1 || lunarDay === 15
+
         return (
             <div className="flex flex-col items-center justify-center h-full relative">
                 <div className="text-sm font-medium">{day}</div>
-                <div className="text-xs text-gray-500">{lunarDay}/{lunarMonth}</div>
+                <div className={`text-xs ${isLunarSpecialDay ? 'text-red-600 font-semibold' : 'text-gray-500'}`}>
+                    {lunarDay}/{lunarMonth}
+                </div>
                 {activityCount > 0 && (
                     <div className="absolute -bottom-2 w-4 h-1 bg-blue-500 rounded-full"></div>
                 )}
@@ -264,7 +299,7 @@ function App() {
             <div className="flex-1 flex flex-col overflow-hidden max-w-7xl mx-auto w-full">
                 {/* Calendar Container */}
                 <div
-                    className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 relative"
+                    className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 relative calendar-container"
                     onTouchStart={handleTouchStart}
                     onTouchMove={handleTouchMove}
                     onTouchEnd={handleTouchEnd}
@@ -320,11 +355,23 @@ function App() {
                             const currentMonth = calendarApi?.getDate().getMonth()
                             const cellMonth = arg.date.getMonth()
 
+                            const classes = []
+
                             // Thêm class để vô hiệu hóa pointer events cho ngày ngoài tháng
                             if (currentMonth !== cellMonth) {
-                                return ['pointer-events-none', 'cursor-default']
+                                classes.push('pointer-events-none', 'cursor-default')
                             }
-                            return []
+
+                            // Thêm border cho ngày đang được chọn
+                            if (selectedDate) {
+                                const selectedDateStr = selectedDate.toISOString().split('T')[0]
+                                const cellDateStr = arg.date.toISOString().split('T')[0]
+                                if (selectedDateStr === cellDateStr) {
+                                    classes.push('selected-date')
+                                }
+                            }
+
+                            return classes
                         }}
                     />
 

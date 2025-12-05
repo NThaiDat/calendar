@@ -28,18 +28,94 @@
   animation: fade-in 0.2s ease-out;
 }
 
-/* Smooth height transition for calendar */
-/*.fc {*/
-/*  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
-/*}*/
+/* Calendar fade transition for month changes */
+@keyframes calendar-fade-out-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+}
 
-/*.fc .fc-view-harness {*/
-/*  transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
-/*}*/
+@keyframes calendar-fade-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
 
-/*.fc .fc-scroller {*/
-/*  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1) !important;*/
-/*}*/
+@keyframes calendar-fade-out-right {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+}
+
+@keyframes calendar-fade-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.calendar-transitioning-out-left .fc-daygrid-body {
+  animation: calendar-fade-out-left 0.2s ease-out;
+}
+
+.calendar-transitioning-in-left .fc-daygrid-body {
+  animation: calendar-fade-in-left 0.2s ease-out;
+}
+
+.calendar-transitioning-out-right .fc-daygrid-body {
+  animation: calendar-fade-out-right 0.2s ease-out;
+}
+
+.calendar-transitioning-in-right .fc-daygrid-body {
+  animation: calendar-fade-in-right 0.2s ease-out;
+}
+
+/* Smooth transitions for calendar */
+.fc-daygrid-body {
+  transition: opacity 0.2s ease-out, transform 0.2s ease-out;
+}
+
+/* Smooth height transition for calendar container */
+.calendar-container {
+  transition: height 0.3s cubic-bezier(0.3, 0, 0.2, 1);
+}
+
+/* Selected date styling */
+.fc .selected-date {
+  border: 2px solid #3b82f6 !important;
+  border-radius: 0.5rem;
+  background: #eff6ff !important;
+  position: relative;
+  z-index: 1;
+}
+
+.fc .selected-date:hover {
+  background: #dbeafe !important;
+}
+
+.fc .selected-date .fc-daygrid-day-number {
+  color: #1d4ed8;
+  font-weight: 700 !important;
+}
 
 #root {
   width: 100%;
