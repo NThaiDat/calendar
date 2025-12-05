@@ -5,6 +5,7 @@ import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import viLocale from '@fullcalendar/core/locales/vi'
 import {LunarCalendar} from '@dqcai/vn-lunar'
+import {Calendar, CalendarDays, Clock, Menu, X} from 'lucide-react'
 import './App.css'
 
 
@@ -17,6 +18,7 @@ function App() {
     const [lunarInfo, setLunarInfo] = useState(null)
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768)
     const [heightLevel, setHeightLevel] = useState(1)
+    const [isViewMenuOpen, setIsViewMenuOpen] = useState(false)
     const [activities, setActivities] = useState(() => {
         const saved = localStorage.getItem('activities')
         return saved ? JSON.parse(saved) : {}
@@ -217,12 +219,29 @@ function App() {
         return []
     }
 
+    const changeView = (view) => {
+        const calendarApi = calendarRef.current?.getApi()
+        if (calendarApi) {
+            calendarApi.changeView(view)
+            setCurrentView(view)
+            setIsViewMenuOpen(false)
+        }
+    }
+
+    const goToToday = () => {
+        const calendarApi = calendarRef.current?.getApi()
+        if (calendarApi) {
+            calendarApi.today()
+            setIsViewMenuOpen(false)
+        }
+    }
+
     return (
         <div className="h-screen bg-neutral-50 p-2 sm:p-4 flex flex-col overflow-hidden">
             <div className="flex-1 flex flex-col overflow-hidden max-w-7xl mx-auto w-full">
                 {/* Calendar Container */}
                 <div
-                    className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300"
+                    className="bg-white p-3 sm:p-4 shadow-sm transition-all duration-300 relative"
                     // onTouchStart={handleTouchStart}
                     // onTouchMove={handleTouchMove}
                     // onTouchEnd={handleTouchEnd}
@@ -238,7 +257,7 @@ function App() {
                                 ? {
                                     left: '',
                                     center: 'prev,title,next',
-                                    right: 'dayGridMonth,dayGridWeek,timeGridDay,today'
+                                    right: ''
                                 }
                                 : {
                                     left: 'prev,next,today',
@@ -285,6 +304,9 @@ function App() {
                             return []
                         }}
                     />
+
+
+
                 </div>
 
                 {/* Today Activities Section */}
@@ -353,6 +375,70 @@ function App() {
                         </>
                     )}
                 </div>
+
+                {/* Floating Action Button for Mobile */}
+                {isMobile && (
+                    <div className="fixed bottom-10 right-4 z-10">
+                        {/* Menu Items */}
+                        {isViewMenuOpen && (
+                            <div className="mb-3 flex flex-col gap-2 items-end animate-fade-in">
+                                <button
+                                    onClick={() => changeView('dayGridMonth')}
+                                    className={`${
+                                        currentView === 'dayGridMonth'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white text-gray-700'
+                                    } shadow-lg !rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all`}
+                                >
+                                    <Calendar className="w-5 h-5" />
+                                </button>
+
+                                <button
+                                    onClick={() => changeView('dayGridWeek')}
+                                    className={`${
+                                        currentView === 'dayGridWeek'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white text-gray-700'
+                                    } shadow-lg rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all`}
+                                >
+                                    <CalendarDays className="w-5 h-5" />
+                                </button>
+
+                                <button
+                                    onClick={() => changeView('timeGridDay')}
+                                    className={`${
+                                        currentView === 'timeGridDay'
+                                            ? 'bg-blue-500 text-white'
+                                            : 'bg-white text-gray-700'
+                                    } shadow-lg rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all`}
+                                >
+                                    <Clock className="w-5 h-5" />
+                                </button>
+
+                                <button
+                                    onClick={goToToday}
+                                    className="bg-white text-gray-700 shadow-lg rounded-full w-12 h-12 flex items-center justify-center hover:scale-110 transition-all"
+                                >
+                                    <span className="text-sm font-bold">{new Date().getDate()}</span>
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Main FAB */}
+                        <button
+                            onClick={() => setIsViewMenuOpen(!isViewMenuOpen)}
+                            className={`${
+                                isViewMenuOpen ? 'bg-gray-700' : 'bg-blue-500'
+                            } text-white shadow-lg rounded-full w-14 h-14 flex items-center justify-center hover:scale-110 transition-all`}
+                        >
+                            {isViewMenuOpen ? (
+                                <X className="w-6 h-6" />
+                            ) : (
+                                <Menu className="w-6 h-6" />
+                            )}
+                        </button>
+                    </div>
+                )}
 
                 {/* Add Activity Modal */}
                 {isModalOpen && (
